@@ -454,7 +454,7 @@ const styles = {
     overflowY: "auto",
     overflowX: "hidden",
     display: "flex",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "center",
     WebkitOverflowScrolling: "touch",
   },
