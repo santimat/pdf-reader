@@ -9,15 +9,15 @@ const ZOOM_KEY = "pdf-reader-zoom";
 
 function getSavedZoom() {
   try {
-    const z = parseFloat(localStorage.getItem(ZOOM_KEY));
-    return isNaN(z) ? null : z;
+    const zoom = parseFloat(localStorage.getItem(ZOOM_KEY));
+    return isNaN(zoom) ? null : zoom;
   } catch {
     return null;
   }
 }
-function saveZoom(z) {
+function saveZoom(zoom) {
   try {
-    localStorage.setItem(ZOOM_KEY, z);
+    localStorage.setItem(ZOOM_KEY, zoom);
   } catch {}
 }
 
@@ -25,7 +25,7 @@ function isMobile() {
   return window.innerWidth <= 768;
 }
 
-function calcFitScale(viewport, padding = 32) {
+function calcFitScale(viewport, padding = 10) {
   const available = window.innerWidth - padding;
   return available / viewport.width;
 }
@@ -132,7 +132,7 @@ export default function PDFReader({ book, onClose, onSaveProgress }) {
 
       const firstPage = await pdf.getPage(1);
       const baseViewport = firstPage.getViewport({ scale: 1 });
-      const fitScale = calcFitScale(baseViewport, isMobile() ? 16 : 48);
+      const fitScale = calcFitScale(baseViewport);
       const autoScale = isMobile() ? fitScale : Math.max(fitScale, 1.0);
       const autoScaleWithSaved = getSavedZoom() ?? autoScale;
       setScale(autoScaleWithSaved);
@@ -159,7 +159,7 @@ export default function PDFReader({ book, onClose, onSaveProgress }) {
         if (!pdfRef.current) return;
         const page = await pdfRef.current.getPage(currentPageRef.current);
         const baseViewport = page.getViewport({ scale: 1 });
-        const fitScale = calcFitScale(baseViewport, isMobile() ? 16 : 48);
+        const fitScale = calcFitScale(baseViewport, isMobile() ? 10 : 25);
         const newScale = isMobile() ? fitScale : Math.max(fitScale, 1.0);
         setScale(newScale);
         scaleRef.current = newScale;
@@ -287,7 +287,7 @@ export default function PDFReader({ book, onClose, onSaveProgress }) {
 
       <div
         ref={canvasAreaRef}
-        style={{ ...styles.canvasArea, padding: mobile ? "12px 8px" : 24 }}
+        style={{ ...styles.canvasArea }}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
@@ -457,6 +457,7 @@ const styles = {
     alignItems: "flex-start",
     justifyContent: "center",
     WebkitOverflowScrolling: "touch",
+    padding: "5px 0",
   },
   canvasWrapper: {
     background: "#fff",
