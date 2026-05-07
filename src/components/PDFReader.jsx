@@ -63,6 +63,8 @@ export default function PDFReader({ book, onClose, onSaveProgress }) {
   const scaleRef = useRef(1.2);
   const touchStartX = useRef(null);
   const touchStartY = useRef(null);
+  const sentinelRef = useRef(null);
+  const pageChangingRef = useRef(false);
 
   useEffect(() => {
     currentPageRef.current = currentPage;
@@ -208,6 +210,43 @@ export default function PDFReader({ book, onClose, onSaveProgress }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Scroll-based page navigation via IntersectionObserver on a sentinel element
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    const area = canvasAreaRef.current;
+    if (!sentinel || !area) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        // Only fire when sentinel becomes visible AND we're not mid-transition
+        if (
+          entry.isIntersecting &&
+          !pageChangingRef.current &&
+          currentPageRef.current < totalPagesRef.current &&
+          area.scrollHeight > area.clientHeight + 20
+        ) {
+          pageChangingRef.current = true;
+          goTo(currentPageRef.current + 1).then(() => {
+            // Brief cooldown so the scroll reset doesn't immediately re-trigger
+            setTimeout(() => {
+              pageChangingRef.current = false;
+            }, 800);
+          });
+        }
+      },
+      {
+        root: area,
+        // Trigger when sentinel is within 4px of the bottom of the scroll container
+        rootMargin: "0px 0px 4px 0px",
+        threshold: 0,
+      },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
+
   function onTouchStart(e) {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
@@ -305,6 +344,16 @@ export default function PDFReader({ book, onClose, onSaveProgress }) {
         >
           <canvas ref={canvasRef} style={{ display: "block" }} />
         </div>
+        {/* Sentinel: becomes visible when user reaches the bottom of the page */}
+        <div
+          ref={sentinelRef}
+          style={{
+            width: "100%",
+            height: 1,
+            flexShrink: 0,
+            alignSelf: "flex-end",
+          }}
+        />
       </div>
 
       {mobile && !loading && (
@@ -454,8 +503,8 @@ const styles = {
     overflowY: "auto",
     overflowX: "hidden",
     display: "flex",
-    alignItems: "flex-start",
-    justifyContent: "center",
+    flexDirection: "column",
+    alignItems: "center",
     WebkitOverflowScrolling: "touch",
     padding: "5px 0",
   },
