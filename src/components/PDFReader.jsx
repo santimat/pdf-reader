@@ -63,13 +63,10 @@ export default function PDFReader({ book, onClose, onSaveProgress }) {
   const scaleRef = useRef(1.2);
   const touchStartX = useRef(null);
   const touchStartY = useRef(null);
-<<<<<<< HEAD
   const isScrollingRef = useRef(false);
-=======
   const sentinelBottomRef = useRef(null);
   const pageChangingRef = useRef(false);
   const hasScrolledDownRef = useRef(false);
->>>>>>> 8a91c83d72d8bce2b91a5ed21cc6615310e3e726
 
   useEffect(() => {
     currentPageRef.current = currentPage;
@@ -315,14 +312,22 @@ export default function PDFReader({ book, onClose, onSaveProgress }) {
     const atBottom = scrollTop + clientHeight >= scrollHeight - 5;
     const atTop = scrollTop <= 5;
 
-    if (e.deltaY > 0 && atBottom && currentPageRef.current < totalPagesRef.current) {
+    if (
+      e.deltaY > 0 &&
+      atBottom &&
+      currentPageRef.current < totalPagesRef.current
+    ) {
       isScrollingRef.current = true;
       goTo(currentPageRef.current + 1);
-      setTimeout(() => { isScrollingRef.current = false; }, 400);
+      setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 400);
     } else if (e.deltaY < 0 && atTop && currentPageRef.current > 1) {
       isScrollingRef.current = true;
       goTo(currentPageRef.current - 1);
-      setTimeout(() => { isScrollingRef.current = false; }, 400);
+      setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 400);
     }
   }
 
@@ -418,31 +423,6 @@ export default function PDFReader({ book, onClose, onSaveProgress }) {
           }}
         />
       </div>
-
-      {mobile && !loading && (
-        <div style={styles.bottomNav}>
-          <button
-            style={{ ...styles.navBtn, opacity: currentPage <= 1 ? 0.3 : 1 }}
-            disabled={currentPage <= 1}
-            onClick={() => goTo(currentPage - 1)}
-          >
-            ‹ Anterior
-          </button>
-          <span style={styles.pageLabel}>
-            {currentPage} / {totalPages || "—"}
-          </span>
-          <button
-            style={{
-              ...styles.navBtn,
-              opacity: currentPage >= totalPages ? 0.3 : 1,
-            }}
-            disabled={currentPage >= totalPages}
-            onClick={() => goTo(currentPage + 1)}
-          >
-            Siguiente ›
-          </button>
-        </div>
-      )}
     </div>
   );
 }
@@ -584,24 +564,5 @@ const styles = {
     top: "50%",
     left: "50%",
     transform: "translate(-50%,-50%)",
-  },
-  bottomNav: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "10px 16px",
-    background: "#231F1B",
-    borderTop: "0.5px solid rgba(255,255,255,0.08)",
-    flexShrink: 0,
-  },
-  navBtn: {
-    background: "rgba(255,255,255,0.06)",
-    border: "0.5px solid rgba(255,255,255,0.12)",
-    borderRadius: 8,
-    color: "#C8BEB4",
-    fontSize: 14,
-    cursor: "pointer",
-    padding: "10px 18px",
-    fontFamily: "inherit",
   },
 };
