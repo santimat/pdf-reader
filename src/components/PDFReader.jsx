@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as pdfjsLib from "pdfjs-dist";
+import "../styles/pdfReader.css";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
@@ -101,6 +102,7 @@ export default function PDFReader({ book, onClose, onSaveProgress }) {
 
     await page.render({ canvasContext: ctx, viewport: baseViewport }).promise;
     setLoading(false);
+    return true;
   }, []);
 
   useEffect(() => {
@@ -146,7 +148,7 @@ export default function PDFReader({ book, onClose, onSaveProgress }) {
       setCurrentPage(startPage);
       currentPageRef.current = startPage;
       await renderPage(startPage, pdf, autoScaleWithSaved);
-      setLoading(false);
+      updateLayout();
     }
     load();
     return () => {
@@ -190,14 +192,23 @@ export default function PDFReader({ book, onClose, onSaveProgress }) {
     }, 800);
   }
 
-  async function changeZoom(delta) {
+  function updateLayout() {
+    const el = canvasAreaRef.current;
+    if (!el) return;
+    const hasScroll = el.scrollHeight > el.clientHeight;
+    el.style.justifyContent = hasScroll ? "flex-start" : "center";
+  }
+
+  function changeZoom(delta) {
     const newScale =
       Math.round(Math.max(0.4, Math.min(3.0, scaleRef.current + delta)) * 10) /
       10;
     setScale(newScale);
     scaleRef.current = newScale;
     saveZoom(newScale);
-    await renderPage(currentPageRef.current, pdfRef.current, newScale);
+    renderPage(currentPageRef.current, pdfRef.current, newScale).then(
+      updateLayout,
+    );
   }
 
   useEffect(() => {
@@ -394,6 +405,7 @@ export default function PDFReader({ book, onClose, onSaveProgress }) {
       <div
         ref={canvasAreaRef}
         style={{ ...styles.canvasArea }}
+        id="canvas-area"
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
         onWheel={onWheel}
