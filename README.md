@@ -1,36 +1,41 @@
 # PDF Reader
 
-Biblioteca personal de PDFs sincronizada entre dispositivos via URL de sesión. Sin login.
+Biblioteca personal de PDFs sincronizada entre dispositivos via URL de sesión. Sin login, sin registro.
 
-## Usar
+## Demo
 
-- Abrí la app → se crea tu sesión automáticamente
-- La URL `/s/[uuid]` es tu biblioteca
-- **Guardala como favorito** o copiala con el botón 🔗
-- Desde cualquier dispositivo que tenga esa URL, accedés a todos tus PDFs
+> Tu biblioteca accessible desde cualquier dispositivo con solo guardar la URL de sesión.
 
-## Estructura
+## Características
+
+- **Sin cuenta** - Solo necesitás guardar tu URL de sesión
+- **Sincronización** - Subí un PDF desde tu PC, leé desde tu celular
+- **Portada automática** - Genera thumbnail de la primera página
+- **Progreso guardado** - Retomá desde donde dejaste en cualquier dispositivo
+- **Zoom** - Controles +/− y atajos de teclado (← →)
+- **Subida múltiple** - Arrastrá archivos o usá el botón
+- **Diseño responsivo** - Funciona en desktop y móvil
+
+## Estructura del Proyecto
 
 ```
 src/
 ├── lib/
-│   └── supabase.js        # Cliente Supabase + lógica de sesión
+│   └── supabase.js           # Cliente Supabase
 ├── hooks/
-│   ├── useLibrary.js      # CRUD de libros (upload, delete, progress)
-│   └── usePDFThumbnail.js # Renderiza thumbnail de portada
+│   ├── useLibrary.js         # CRUD de libros + progreso
+│   └── usePDFThumbnail.js    # Thumbnail de portada
 ├── components/
-│   ├── BookCard.jsx       # Tarjeta de libro con thumbnail y progreso
-│   └── PDFReader.jsx      # Lector fullscreen con guardado automático
+│   ├── BookCard.jsx          # Tarjeta con thumbnail y progreso
+│   └── PDFReader.jsx         # Lector fullscreen
 └── pages/
-    ├── Home.jsx           # Landing / creación de sesión
-    └── Library.jsx        # Vista principal de biblioteca
+    ├── Home.jsx              # Landing + crear sesión
+    └── Library.jsx           # Biblioteca principal
 ```
 
-## Features
+## Uso
 
-- Subida de PDFs a Supabase Storage (1 GB gratis)
-- Thumbnail automático de portada
-- Guardado de página automático (sincronizado en DB)
-- Retoma desde donde dejaste en cualquier dispositivo
-- Zoom y navegación por teclado (← →)
-- Drag & drop para subir PDFs
+1. Abrí la app → se crea tu sesión automáticamente
+2. La URL `/s/[uuid]` es tu biblioteca
+3. **Guardala como favorito** o copiala con el botón
+4. Desde cualquier dispositivo con esa URL, accedés a todos tus PDFs
