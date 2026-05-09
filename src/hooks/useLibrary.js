@@ -26,7 +26,8 @@ export function useLibrary(sessionId) {
     if (!file || !sessionId) return;
     setUploading(true);
     try {
-      const path = `${sessionId}_${file.name}`;
+      const safeName = file.name.replace(" ", "_");
+      const path = `${sessionId}_${safeName}`;
       const { error: storageError } = await supabase.storage
         .from("pdfs")
         .upload(path, file, { contentType: "application/pdf", upsert: false });

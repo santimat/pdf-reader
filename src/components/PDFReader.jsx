@@ -63,6 +63,7 @@ export default function PDFReader({ book, onClose, onSaveProgress }) {
   const scaleRef = useRef(1.2);
   const touchStartX = useRef(null);
   const touchStartY = useRef(null);
+  const isScrollingRef = useRef(false);
 
   useEffect(() => {
     currentPageRef.current = currentPage;
@@ -225,6 +226,26 @@ export default function PDFReader({ book, onClose, onSaveProgress }) {
     touchStartY.current = null;
   }
 
+  function onWheel(e) {
+    if (mobile) return;
+    if (isScrollingRef.current) return;
+    const el = canvasAreaRef.current;
+    if (!el) return;
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    const atBottom = scrollTop + clientHeight >= scrollHeight - 5;
+    const atTop = scrollTop <= 5;
+
+    if (e.deltaY > 0 && atBottom && currentPageRef.current < totalPagesRef.current) {
+      isScrollingRef.current = true;
+      goTo(currentPageRef.current + 1);
+      setTimeout(() => { isScrollingRef.current = false; }, 400);
+    } else if (e.deltaY < 0 && atTop && currentPageRef.current > 1) {
+      isScrollingRef.current = true;
+      goTo(currentPageRef.current - 1);
+      setTimeout(() => { isScrollingRef.current = false; }, 400);
+    }
+  }
+
   const progress = totalPages
     ? Math.round((currentPage / totalPages) * 100)
     : 0;
@@ -290,6 +311,7 @@ export default function PDFReader({ book, onClose, onSaveProgress }) {
         style={{ ...styles.canvasArea }}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
+        onWheel={onWheel}
       >
         {loading && (
           <div style={styles.loadingMsg}>
