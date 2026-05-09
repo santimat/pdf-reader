@@ -63,7 +63,13 @@ export default function PDFReader({ book, onClose, onSaveProgress }) {
   const scaleRef = useRef(1.2);
   const touchStartX = useRef(null);
   const touchStartY = useRef(null);
+<<<<<<< HEAD
   const isScrollingRef = useRef(false);
+=======
+  const sentinelBottomRef = useRef(null);
+  const pageChangingRef = useRef(false);
+  const hasScrolledDownRef = useRef(false);
+>>>>>>> 8a91c83d72d8bce2b91a5ed21cc6615310e3e726
 
   useEffect(() => {
     currentPageRef.current = currentPage;
@@ -209,6 +215,80 @@ export default function PDFReader({ book, onClose, onSaveProgress }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Scroll-based page navigation via IntersectionObserver on sentinel elements
+  useEffect(() => {
+    const sentinelBottom = sentinelBottomRef.current;
+    const area = canvasAreaRef.current;
+    if (!sentinelBottom || !area) return;
+
+    // --- Bottom sentinel: advance to next page ---
+    const bottomObserver = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (
+          entry.isIntersecting &&
+          !pageChangingRef.current &&
+          currentPageRef.current < totalPagesRef.current &&
+          area.scrollHeight > area.clientHeight + 20
+        ) {
+          pageChangingRef.current = true;
+          hasScrolledDownRef.current = false;
+          goTo(currentPageRef.current + 1).then(() => {
+            setTimeout(() => {
+              pageChangingRef.current = false;
+            }, 800);
+          });
+        }
+      },
+      { root: area, rootMargin: "0px 0px 4px 0px", threshold: 0 },
+    );
+    bottomObserver.observe(sentinelBottom);
+
+    // --- Top detection: go to previous page ---
+    // We use the scroll event but only fire when:
+    // 1. User had scrolled down at some point (hasScrolledDownRef = true)
+    // 2. scrollTop reaches 0 again (they pulled all the way up)
+    // 3. Not in the middle of a programmatic page change
+    let lastScrollTop = 0;
+    function onScroll() {
+      const { scrollTop } = area;
+
+      // Mark that the user has scrolled down meaningfully
+      if (scrollTop > 50) {
+        hasScrolledDownRef.current = true;
+      }
+
+      // Detect reaching top after having scrolled down
+      if (
+        scrollTop === 0 &&
+        lastScrollTop > 0 &&
+        hasScrolledDownRef.current &&
+        !pageChangingRef.current &&
+        currentPageRef.current > 1
+      ) {
+        pageChangingRef.current = true;
+        hasScrolledDownRef.current = false;
+        goTo(currentPageRef.current - 1).then(() => {
+          // Scroll to bottom of previous page so user can scroll up to go further back
+          requestAnimationFrame(() => {
+            area.scrollTop = area.scrollHeight;
+            setTimeout(() => {
+              pageChangingRef.current = false;
+            }, 800);
+          });
+        });
+      }
+
+      lastScrollTop = scrollTop;
+    }
+    area.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => {
+      bottomObserver.disconnect();
+      area.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+
   function onTouchStart(e) {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
@@ -327,6 +407,16 @@ export default function PDFReader({ book, onClose, onSaveProgress }) {
         >
           <canvas ref={canvasRef} style={{ display: "block" }} />
         </div>
+        {/* Sentinel: becomes visible when user reaches the bottom → next page */}
+        <div
+          ref={sentinelBottomRef}
+          style={{
+            width: "100%",
+            height: 1,
+            flexShrink: 0,
+            alignSelf: "flex-end",
+          }}
+        />
       </div>
 
       {mobile && !loading && (
@@ -476,8 +566,8 @@ const styles = {
     overflowY: "auto",
     overflowX: "hidden",
     display: "flex",
-    alignItems: "flex-start",
-    justifyContent: "center",
+    flexDirection: "column",
+    alignItems: "center",
     WebkitOverflowScrolling: "touch",
     padding: "5px 0",
   },
