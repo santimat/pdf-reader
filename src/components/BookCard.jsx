@@ -7,36 +7,47 @@
  * - Reading progress bar
  * - Page info ("Página X de Y" or "Sin empezar")
  * - Open and Delete buttons
+ * 
+ * PERFORMANCE: Memoized with React.memo to prevent re-renders when parent updates
+ * but this card's props haven't changed. This is critical for libraries
+ * with many books.
  */
 
+import { useMemo, memo } from 'react'
 import { usePDFThumbnail } from '../hooks/usePDFThumbnail'
 
 /**
- * BookCard Component
+ * BookCard Component - memoized for performance
+ * 
+ * Uses React.memo to only re-render when book data actually changes.
+ * The useMemo hook calculates progress percentage only when needed.
  * 
  * @param {Object} props
  * @param {Object} props.book - Book data object from database
  * @param {Function} props.onOpen - Callback when user wants to open the book
  * @param {Function} props.onDelete - Callback when user wants to delete the book
  */
-export default function BookCard({ book, onOpen, onDelete }) {
+const BookCard = memo(function BookCard({ book, onOpen, onDelete }) {
   // =============================================================================
   // THUMBNAIL GENERATION
   // =============================================================================
 
   // Custom hook that generates a thumbnail image from the PDF's public URL
-  // Returns null while loading, then the image data URL when ready
+  // Uses caching - will return immediately if thumbnail was already generated
   const thumbnailImage = usePDFThumbnail(book.public_url)
 
   // =============================================================================
-  // READING PROGRESS
+  // READING PROGRESS (memoized to avoid recalculating)
   // =============================================================================
 
   // Calculate reading progress as a percentage
-  // If total_pages is null (not yet discovered), progress is null
-  const progressPercentage = book.total_pages
-    ? Math.round((book.current_page / book.total_pages) * 100)
-    : null
+  // Only recalculates when current_page or total_pages changes
+  // useMemo prevents this calculation on every parent re-render
+  const progressPercentage = useMemo(() => {
+    return book.total_pages
+      ? Math.round((book.current_page / book.total_pages) * 100)
+      : null
+  }, [book.current_page, book.total_pages])
 
   // =============================================================================
   // RENDER
@@ -51,10 +62,11 @@ export default function BookCard({ book, onOpen, onDelete }) {
       <div style={styles.thumbnail} onClick={() => onOpen(book)}>
         {/* Show thumbnail image if available */}
         {thumbnailImage ? (
-          <img
-            src={thumbnailImage}
-            alt={book.name}
-            style={styles.thumbnailImage}
+          <img 
+            src={thumbnailImage} 
+            alt={book.name} 
+            style={styles.thumbnailImage} 
+            loading="lazy" // Native lazy loading for better performance
           />
         ) : (
           /* Show placeholder icon while thumbnail generates */
@@ -113,7 +125,10 @@ export default function BookCard({ book, onOpen, onDelete }) {
       </div>
     </div>
   )
-}
+})
+
+// Export the memoized component
+export default BookCard
 
 // =============================================================================
 // STYLES
