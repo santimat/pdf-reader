@@ -1,26 +1,39 @@
 /**
  * Library Page Component
- * 
+ *
  * Main page for managing a user's PDF library.
  * Displays a grid of books with upload/delete functionality.
- * 
+ *
  * URL pattern: /s/:sessionId
  * Each session ID represents a separate user's library.
  */
 
-import { useState, useRef } from "react";
+import { useState, useRef, lazy, Suspense } from "react";
 
-// React Router hook to extract URL parameters
 import { useParams } from "react-router-dom";
 
-// Custom hook for library operations (fetch, upload, delete books)
 import { useLibrary } from "../hooks/useLibrary";
 
-// Component to display a single book card with thumbnail
 import BookCard from "../components/BookCard";
 
-// PDF Reader component (full-screen overlay for reading PDFs)
-import PDFReader from "../components/PDFReader";
+const PDFReader = lazy(() => import("../components/PDFReader"));
+
+function PDFReaderFallback() {
+  return (
+    <div style={{
+      position: "fixed",
+      inset: 0,
+      zIndex: 100,
+      background: "#1A1714",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "#A09890"
+    }}>
+      Loading reader...
+    </div>
+  );
+}
 
 export default function Library() {
   // =============================================================================
@@ -31,14 +44,8 @@ export default function Library() {
   const { sessionId } = useParams();
 
   // Get all library functions and state from the custom hook
-  const {
-    books,
-    isLoading,
-    isUploading,
-    uploadPDF,
-    saveProgress,
-    deleteBook,
-  } = useLibrary(sessionId);
+  const { books, isLoading, isUploading, uploadPDF, saveProgress, deleteBook } =
+    useLibrary(sessionId);
 
   // Currently open book (for PDF Reader overlay)
   // null = library view, object = PDF Reader view
@@ -60,7 +67,7 @@ export default function Library() {
    */
   function copySessionURL() {
     navigator.clipboard.writeText(window.location.href);
-    
+
     // Show "Copied!" feedback for 2 seconds
     setShowCopiedMessage(true);
     setTimeout(() => setShowCopiedMessage(false), 2000);
@@ -73,7 +80,7 @@ export default function Library() {
   /**
    * Handles files dropped onto the page.
    * Validates that the dropped file is a PDF before uploading.
-   * 
+   *
    * @param {DragEvent} event - Drag and drop event
    */
   function handleFileDrop(event) {
@@ -96,11 +103,13 @@ export default function Library() {
   // If a book is active, show the PDF Reader overlay instead of library
   if (activeBook) {
     return (
-      <PDFReader
-        book={activeBook}                          // The book object to read
-        onClose={() => setActiveBook(null)}        // Callback to return to library
-        onSaveProgress={saveProgress}             // Callback to save reading progress
-      />
+      <Suspense fallback={<PDFReaderFallback />}>
+        <PDFReader
+          book={activeBook}
+          onClose={() => setActiveBook(null)}
+          onSaveProgress={saveProgress}
+        />
+      </Suspense>
     );
   }
 
@@ -115,7 +124,7 @@ export default function Library() {
     <div
       style={styles.page}
       onDragOver={(event) => event.preventDefault()} // Allow dropping
-      onDrop={handleFileDrop}                       // Process dropped files
+      onDrop={handleFileDrop} // Process dropped files
     >
       {/* ---------------------------------------------------------- */}
       {/* HEADER: Title, Session URL Copy, Upload Button */}
@@ -164,11 +173,12 @@ export default function Library() {
       <div style={styles.sessionInfo}>
         {/* Green dot indicating session is active */}
         <span style={styles.sessionDot} />
-        
+
         <span>
-          Sesión: <code style={styles.sessionCode}>{sessionId.slice(0, 8)}…</code>
+          Sesión:{" "}
+          <code style={styles.sessionCode}>{sessionId.slice(0, 8)}…</code>
         </span>
-        
+
         {/* Helper text about saving the URL */}
         <span style={{ color: "#A09890" }}>
           — guardá esta URL para acceder desde otros dispositivos
@@ -189,7 +199,9 @@ export default function Library() {
         >
           <div style={styles.dropIcon}>📄</div>
           <p style={styles.dropTitle}>Agregá tu primer PDF</p>
-          <p style={styles.dropSubtitle}>Hacé clic aquí o arrastrá un archivo</p>
+          <p style={styles.dropSubtitle}>
+            Hacé clic aquí o arrastrá un archivo
+          </p>
         </div>
       ) : (
         /* Books grid - displays all books as cards */
@@ -197,10 +209,10 @@ export default function Library() {
           {/* Map each book to a BookCard component */}
           {books.map((book) => (
             <BookCard
-              key={book.id}              // React key for list rendering
-              book={book}                // Book data object
-              onOpen={setActiveBook}     // Callback when user clicks to open book
-              onDelete={deleteBook}      // Callback when user clicks delete
+              key={book.id} // React key for list rendering
+              book={book} // Book data object
+              onOpen={setActiveBook} // Callback when user clicks to open book
+              onDelete={deleteBook} // Callback when user clicks delete
             />
           ))}
 

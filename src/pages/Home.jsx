@@ -1,6 +1,6 @@
 /**
  * Home Page Component
- * 
+ *
  * Landing page that allows users to:
  * 1. Create a new library session (generates a unique session ID)
  * 2. Automatically redirect to an existing session if one is saved in localStorage
